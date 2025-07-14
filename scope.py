@@ -1,7 +1,13 @@
 import os
 import logging
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, ReplyKeyboardMarkup, KeyboardButton, KeyboardButtonRequestChat
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters, CallbackQueryHandler
+from telegram import (
+    InlineKeyboardButton, InlineKeyboardMarkup, Update,
+    ReplyKeyboardMarkup, KeyboardButton, KeyboardButtonRequestChat
+)
+from telegram.ext import (
+    ApplicationBuilder, CommandHandler, ContextTypes,
+    MessageHandler, filters, CallbackQueryHandler
+)
 from aiohttp import web
 import asyncio
 from route import routes  # Import routes
@@ -11,13 +17,10 @@ from telegram.constants import ParseMode
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# bot token
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-
-# Stack for back navigation
 USER_STATE = {}
 
-# Util function to navigate back
+# Navigation helpers
 async def go_back(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     if chat_id in USER_STATE and USER_STATE[chat_id]:
@@ -26,7 +29,6 @@ async def go_back(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await start(update, context)
 
-# Helper to push current state
 def save_state(update: Update, handler):
     chat_id = update.effective_chat.id
     if chat_id not in USER_STATE:
@@ -36,24 +38,53 @@ def save_state(update: Update, handler):
 # /start handler
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     main_keyboard = [
-        [KeyboardButton("👮‍♂️ Own"), KeyboardButton("🙍‍♂️ Non-Own")],
-    ]
+    [KeyboardButton(
+        "👤 My Groups",
+        request_chat=KeyboardButtonRequestChat(
+            request_id=13,
+            chat_is_channel=False,
+            chat_is_created=True
+        )
+    )],
+    [KeyboardButton("🌐 Other")],
+]
     markup = ReplyKeyboardMarkup(keyboard=main_keyboard, resize_keyboard=True)
-    await update.message.reply_text("Choose one:", reply_markup=markup)
-    
+    await update.message.reply_text("Choose a section:", reply_markup=markup)
+
 async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [[InlineKeyboardButton("🧑🏻‍💻 About", callback_data='btn_clicked')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
-
-    await update.message.reply_text("<b>HELP</b>:\n\nA solution to find Public Private Channels, Groups, Forums with ownership and no ownership", reply_markup=reply_markup, parse_mode=ParseMode.HTML)
+    await update.message.reply_text(
+        "<b>HELP</b>:\n\nA solution to find Public Private Channels, Groups, Forums with ownership and no ownership",
+        reply_markup=reply_markup,
+        parse_mode=ParseMode.HTML
+    )
 
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    await query.answer()  # Acknowledge the button press
+    await query.answer()
     if query.data == 'btn_clicked':
         await query.edit_message_text(text="👨🏻‍💻 Creator : @ShuhaibNC")
 
-# Submenu for Own
+# My Groups (Ownership-based groups only)
+async def show_my_groups(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    save_state(update, start)
+    keyboard = [
+        [KeyboardButton(
+            "👥 Select My Group",
+            request_chat=KeyboardButtonRequestChat(
+                request_id=13,
+                chat_is_channel=False,      # Not a channel
+                chat_has_username=None,     # Both public and private
+                chat_is_created=True        # User is the creator
+            )
+        )],
+        [KeyboardButton("↩️ Back")]
+    ]
+    markup = ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True)
+    await update.message.reply_text("Select your owned group:", reply_markup=markup)
+
+# Full menu under "Other"
 async def show_own(update: Update, context: ContextTypes.DEFAULT_TYPE):
     save_state(update, start)
     keyboard = [
@@ -63,7 +94,6 @@ async def show_own(update: Update, context: ContextTypes.DEFAULT_TYPE):
     markup = ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True)
     await update.message.reply_text("Choose category for ✔️ Own:", reply_markup=markup)
 
-# Submenu for Non-Own
 async def show_non_own(update: Update, context: ContextTypes.DEFAULT_TYPE):
     save_state(update, start)
     keyboard = [
@@ -73,7 +103,6 @@ async def show_non_own(update: Update, context: ContextTypes.DEFAULT_TYPE):
     markup = ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True)
     await update.message.reply_text("Choose category for ❌ Non-Own:", reply_markup=markup)
 
-# Own Channels submenu
 async def show_own_channels(update: Update, context: ContextTypes.DEFAULT_TYPE):
     save_state(update, show_own)
     keyboard = [
@@ -84,7 +113,6 @@ async def show_own_channels(update: Update, context: ContextTypes.DEFAULT_TYPE):
     markup = ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True)
     await update.message.reply_text("Select channel type (Own):", reply_markup=markup)
 
-# Non-Own Channels submenu
 async def show_non_own_channels(update: Update, context: ContextTypes.DEFAULT_TYPE):
     save_state(update, show_non_own)
     keyboard = [
@@ -95,7 +123,6 @@ async def show_non_own_channels(update: Update, context: ContextTypes.DEFAULT_TY
     markup = ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True)
     await update.message.reply_text("Select channel type (Non-Own):", reply_markup=markup)
 
-# Own Groups submenu
 async def show_own_groups(update: Update, context: ContextTypes.DEFAULT_TYPE):
     save_state(update, show_own)
     keyboard = [
@@ -106,7 +133,6 @@ async def show_own_groups(update: Update, context: ContextTypes.DEFAULT_TYPE):
     markup = ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True)
     await update.message.reply_text("Select group type (Own):", reply_markup=markup)
 
-# Non-Own Groups submenu
 async def show_non_own_groups(update: Update, context: ContextTypes.DEFAULT_TYPE):
     save_state(update, show_non_own)
     keyboard = [
@@ -117,7 +143,6 @@ async def show_non_own_groups(update: Update, context: ContextTypes.DEFAULT_TYPE
     markup = ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True)
     await update.message.reply_text("Select group type (Non-Own):", reply_markup=markup)
 
-# Own Forums submenu
 async def show_own_forums(update: Update, context: ContextTypes.DEFAULT_TYPE):
     save_state(update, show_own)
     keyboard = [
@@ -128,7 +153,6 @@ async def show_own_forums(update: Update, context: ContextTypes.DEFAULT_TYPE):
     markup = ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True)
     await update.message.reply_text("Select forum type (Own):", reply_markup=markup)
 
-# Non-Own Forums submenu
 async def show_non_own_forums(update: Update, context: ContextTypes.DEFAULT_TYPE):
     save_state(update, show_non_own)
     keyboard = [
@@ -139,23 +163,20 @@ async def show_non_own_forums(update: Update, context: ContextTypes.DEFAULT_TYPE
     markup = ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True)
     await update.message.reply_text("Select forum type (Non-Own):", reply_markup=markup)
 
-# Web server
+# Web server for route integration
 async def web_server():
     web_app = web.Application(client_max_size=30000000)
     web_app.add_routes(routes)
     return web_app
 
-# Main entry point
+# Entry point
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
-    
     app.add_handler(CommandHandler("help", help))
     app.add_handler(CallbackQueryHandler(button_handler))
-
-    app.add_handler(MessageHandler(filters.Text("👮‍♂️ Own"), show_own))
-    app.add_handler(MessageHandler(filters.Text("🙍‍♂️ Non-Own"), show_non_own))
+    app.add_handler(MessageHandler(filters.Text("🌐 Other"), show_own))
 
     app.add_handler(MessageHandler(filters.Text("📢 Channels (Own)"), show_own_channels))
     app.add_handler(MessageHandler(filters.Text("📢 Channels (Non-Own)"), show_non_own_channels))
@@ -172,10 +193,7 @@ def main():
     web_app = loop.run_until_complete(web_server())
     web_runner = web.AppRunner(web_app)
     loop.run_until_complete(web_runner.setup())
-
-    bind_address = "0.0.0.0"
-    PORT = 8080
-    loop.create_task(web.TCPSite(web_runner, bind_address, PORT).start())
+    loop.create_task(web.TCPSite(web_runner, "0.0.0.0", 8080).start())
 
     app.run_polling()
 
