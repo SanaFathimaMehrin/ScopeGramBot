@@ -18,6 +18,17 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
+START_TXT = """
+1. Select My Groups using the buttons. 
+
+2. Click on the desired chat — the bot will send its name.
+
+3. Click on the name to open the chat.
+
+If the chat doesn't open, it means the Telegram server is unable to display it, and returning to it won't be possible. 
+
+Choose a section:
+"""
 USER_STATE = {}
 
 # Navigation helpers
@@ -49,15 +60,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     [KeyboardButton("🌐 OTHER")],
 ]
     markup = ReplyKeyboardMarkup(keyboard=main_keyboard, resize_keyboard=True)
-    await update.message.reply_text("""1. Select My Groups using the buttons. 
-
-2. Click on the desired chat — the bot will send its name.
-
-3. Click on the name to open the chat.
-
-If the chat doesn't open, it means the Telegram server is unable to display it, and returning to it won't be possible. 
-
-Choose a section:""", reply_markup=markup)
+    await update.message.reply_text(START_TXT, reply_markup=markup)
 
 async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [[InlineKeyboardButton("🧑🏻‍💻 About", callback_data='btn_clicked')]]
@@ -184,7 +187,7 @@ def main():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help))
     app.add_handler(CallbackQueryHandler(button_handler))
-    app.add_handler(MessageHandler(filters.Text("🌐 Other"), show_own))
+    app.add_handler(MessageHandler(filters.Text("🌐 OTHER"), show_own))
 
     app.add_handler(MessageHandler(filters.Text("📢 Channels (Own)"), show_own_channels))
     app.add_handler(MessageHandler(filters.Text("📢 Channels (Non-Own)"), show_non_own_channels))
