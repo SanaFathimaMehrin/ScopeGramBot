@@ -39,23 +39,31 @@ def save_state(update: Update, handler):
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     main_keyboard = [
     [KeyboardButton(
-        "👤 My Groups",
+        "👥 MY GROUPS",
         request_chat=KeyboardButtonRequestChat(
             request_id=13,
             chat_is_channel=False,
             chat_is_created=True
         )
     )],
-    [KeyboardButton("🌐 Other")],
+    [KeyboardButton("🌐 OTHER")],
 ]
     markup = ReplyKeyboardMarkup(keyboard=main_keyboard, resize_keyboard=True)
-    await update.message.reply_text("Choose a section:", reply_markup=markup)
+    await update.message.reply_text("""1. Select My Groups using the buttons. 
+
+2. Click on the desired chat — the bot will send its name.
+
+3. Click on the name to open the chat.
+
+If the chat doesn't open, it means the Telegram server is unable to display it, and returning to it won't be possible. 
+
+Choose a section:""", reply_markup=markup)
 
 async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [[InlineKeyboardButton("🧑🏻‍💻 About", callback_data='btn_clicked')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(
-        "<b>HELP</b>:\n\nA solution to find Public Private Channels, Groups, Forums with ownership and no ownership",
+        "<b>HELP</b>:\n\nA solution to find Public Private Channels, Groups, Forums with ownership",
         reply_markup=reply_markup,
         parse_mode=ParseMode.HTML
     )
